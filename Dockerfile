@@ -45,6 +45,7 @@ RUN git clone --shallow-submodules --depth 1 --recurse-submodules -b ${OPENTELEM
     -DWITH_EXAMPLES=OFF \
     -DWITH_ABSEIL=ON \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DWITH_ABSEIL=ON \
     .. \
   && make -j2 \
   && make install
@@ -58,10 +59,10 @@ RUN git clone https://github.com/open-telemetry/opentelemetry-cpp-contrib.git \
     -DCMAKE_PREFIX_PATH=/install \
     -DCMAKE_INSTALL_PREFIX=/etc/nginx/modules \
     -DCURL_LIBRARY=/usr/lib/libcurl.so.4 \
+    -DWITH_ABSEIL=ON \
     .. \
   && make -j2 \
   && make install
-
 
 FROM nginx:1.22.1-alpine3.17
 
@@ -69,3 +70,5 @@ COPY --from=builder /etc/nginx /etc/nginx
 COPY --from=builder /usr/local/lib /usr/local/lib
 COPY --from=builder /usr/lib /usr/lib
 
+# Configure dynamic linker for absl library
+RUN echo "/usr/local/lib" > /etc/ld.so.conf.d/absl.conf && ldconfig
