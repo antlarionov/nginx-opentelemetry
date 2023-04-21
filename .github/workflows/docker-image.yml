@@ -5,6 +5,8 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  release:
+    types: [created]
 
 jobs:
   build:
@@ -41,3 +43,9 @@ jobs:
             ${{ steps.get_info.outputs.tag != '' && format('antlar/nginx-opentelemetry:{0}', steps.get_info.outputs.tag) || '' }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
+      - name: Retag Docker image on release
+        if: github.event_name == 'release'
+        run: |
+          docker pull antlar/nginx-opentelemetry:${{ steps.get_info.outputs.short_sha }}
+          docker tag antlar/nginx-opentelemetry:${{ steps.get_info.outputs.short_sha }} antlar/nginx-opentelemetry:${{ github.event.release.tag_name }}
+          docker push antlar/nginx-opentelemetry:${{ github.event.release.tag_name }}
