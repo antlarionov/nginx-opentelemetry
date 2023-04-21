@@ -1,7 +1,7 @@
-FROM alpine:3.17 as builder
+FROM nginx:1.22.1-alpine3.17 as builder
 
-ENV NGINX_VERSION 1.22.1
-ENV OPENTELEMETRY_VERSION v1.8.1
+ARG NGINX_VERSION=1.22.1
+ARG OPENTELEMETRY_VERSION=v1.9.0
 
 RUN apk update \
   && apk add --update alpine-sdk build-base cmake linux-headers pcre-dev zlib-dev \
@@ -65,13 +65,7 @@ RUN git clone https://github.com/open-telemetry/opentelemetry-cpp-contrib.git \
 
 FROM nginx:1.22.1-alpine3.17
 
-COPY --from=builder /etc/passwd /etc/group /etc/
 COPY --from=builder /etc/nginx /etc/nginx
 COPY --from=builder /usr/local/lib /usr/local/lib
 COPY --from=builder /usr/lib /usr/lib
 
-RUN mkdir -p /var/log/nginx/ && \
-    echo -n > /var/log/nginx/access.log && \
-    echo -n > /var/log/nginx/error.log && \
-    ln -sf /dev/stdout /var/log/nginx/access.log && \
-    ln -sf /dev/stderr /var/log/nginx/error.log
