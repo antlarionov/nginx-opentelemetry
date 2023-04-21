@@ -10,22 +10,34 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Determine Docker tag
-      run: |
-        if [[ -n "${{ github.ref }}"]]; then
-          DOCKER_TAG=${GITHUB_REF#refs/tags/}
-        else
-          DOCKER_TAG=${GITHUB_SHA::8}
-        fi
-        echo ::set-env name=DOCKER_TAG::$DOCKER_TAG
-    - name: docker login
-      env:
-        DOCKER_USER: ${{secrets.DOCKER_USER}}
-        DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
-      run: |
-        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag antlar/nginx-opentelemetry:$DOCKER_TAG
-    - name: Docker Push
-      run: docker push antlar/nginx-opentelemetry:$DOCKER_TAG
+      - uses: actions/checkout@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Get commit SHA and tag (if exists)
+        id: get_info
+        run: |
+          echo "::set-output name=short_sha::$(git rev-parse --short HEAD)"
+          echo "::set-output name=tag::$(git describe --tags --exact-match 2>/dev/null || echo '')"
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            antlar/nginx-opentelemetry:${{ steps.get_info.outputs.short_sha }}
+            ${{ steps.get_info.outputs.tag != '' && format('antlar/nginx-opentelemetry:{0}', steps.get_info.outputs.tag) || '' }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
