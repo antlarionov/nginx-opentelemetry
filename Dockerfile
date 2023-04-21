@@ -71,4 +71,4 @@ COPY --from=builder /usr/local/lib /usr/local/lib
 COPY --from=builder /usr/lib /usr/lib
 
 # Configure dynamic linker for absl library
-RUN echo "/usr/local/lib" > /etc/ld.so.conf.d/absl.conf && ldconfig
+RUN echo "/usr/local/lib" > /etc/ld.so.conf && ldconfig
