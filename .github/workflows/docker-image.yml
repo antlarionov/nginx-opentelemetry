@@ -11,13 +11,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Determine Docker tag
+      run: |
+        if [[ -n "${{ github.ref }}"]]; then
+          DOCKER_TAG=${GITHUB_REF#refs/tags/}
+        else
+          DOCKER_TAG=${GITHUB_SHA::8}
+        fi
+        echo ::set-env name=DOCKER_TAG::$DOCKER_TAG
     - name: docker login
       env:
         DOCKER_USER: ${{secrets.DOCKER_USER}}
         DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
       run: |
-        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD 
+        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag antlar/nginx-opentelemetry
+      run: docker build . --file Dockerfile --tag antlar/nginx-opentelemetry:$DOCKER_TAG
     - name: Docker Push
-      run: docker push antlar/nginx-opentelemetry
+      run: docker push antlar/nginx-opentelemetry:$DOCKER_TAG
