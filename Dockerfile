@@ -63,7 +63,7 @@ RUN git clone https://github.com/open-telemetry/opentelemetry-cpp-contrib.git \
   && make install
 
 
-FROM alpine:3.17
+FROM nginx:1.22.1-alpine3.17
 
 COPY --from=builder /etc/passwd /etc/group /etc/
 RUN true
